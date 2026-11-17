@@ -1,0 +1,11 @@
+#pragma once
+
+// Generated from client/config.hpp.in by CMake. The default server address is
+// baked in at build time so ordinary users only need `create` / `join`.
+// Override at runtime with --server host:port or the SHHTERM_SERVER env var.
+
+namespace shhterm::client {
+
+inline constexpr const char* kDefaultServer = "@SHHTERM_DEFAULT_SERVER@";
+
+}  // namespace shhterm::client

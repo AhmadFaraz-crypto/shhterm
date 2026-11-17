@@ -1,0 +1,18 @@
+# Build output
+/build/
+
+# Local certificates and keys (never commit these)
+/certs/
+*.pem
+*.crt
+*.key
+
+# Distribution bundles / archives
+*.tar.gz
+
+# Node
+node_modules/
+
+# Editor / OS cruft
+.DS_Store
+*.swp

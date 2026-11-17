@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build \
+            libboost-dev libssl-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake ninja boost openssl@3
+
+      - name: Configure
+        run: |
+          EXTRA=""
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            EXTRA="-DCMAKE_PREFIX_PATH=$(brew --prefix) -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)"
+          fi
+          cmake -S . -B build -G Ninja $EXTRA
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Crypto interop (C++ <-> Web Crypto)
+        run: node tools/interop_test.mjs

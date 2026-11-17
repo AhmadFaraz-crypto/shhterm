@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>shhterm — end-to-end encrypted terminal chat</title>
+<meta name="description" content="End-to-end encrypted terminal chat over TLS, with a browser client. No accounts — a room key is the only credential. Open source, C++20." />
+<meta property="og:title" content="shhterm" />
+<meta property="og:description" content="End-to-end encrypted terminal chat. No accounts. Open source." />
+<style>
+  :root {
+    --bg:#0b0f14; --panel:#121821; --panel2:#0c1420; --line:#223042;
+    --fg:#e6edf3; --dim:#7d8da3; --accent:#39d98a; --accent2:#4aa8ff; --dm:#d98cff;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  code,pre,.mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  a { color:var(--accent2); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .wrap { max-width:960px; margin:0 auto; padding:0 20px; }
+
+  /* nav */
+  nav {
+    position:sticky; top:0; z-index:10; backdrop-filter:blur(8px);
+    background:rgba(11,15,20,.8); border-bottom:1px solid var(--line);
+  }
+  nav .wrap { display:flex; align-items:center; gap:16px; height:56px; }
+  nav .brand { font-weight:800; letter-spacing:.3px; }
+  nav .brand .lock { color:var(--accent); }
+  nav .spacer { flex:1; }
+  nav a { color:var(--dim); font-size:14px; }
+  nav a:hover { color:var(--fg); text-decoration:none; }
+
+  /* hero */
+  .hero { text-align:center; padding:72px 0 48px; }
+  .hero h1 { font-size:clamp(34px,6vw,56px); margin:0 0 10px; letter-spacing:-1px; }
+  .hero h1 .lock { color:var(--accent); }
+  .hero p.tag { font-size:clamp(16px,2.4vw,20px); color:var(--dim); margin:0 auto 28px; max-width:620px; }
+  .badges { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:28px; }
+  .badge { font-size:12px; color:var(--dim); border:1px solid var(--line); border-radius:999px; padding:4px 12px; }
+  .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn {
+    display:inline-block; padding:12px 22px; border-radius:10px; font-weight:700;
+    border:1px solid var(--line);
+  }
+  .btn.primary { background:var(--accent); color:#042d1b; border-color:var(--accent); }
+  .btn.primary:hover { text-decoration:none; filter:brightness(1.05); }
+  .btn.ghost { color:var(--fg); }
+  .btn.ghost:hover { text-decoration:none; border-color:var(--accent2); }
+
+  /* terminal mock */
+  .term {
+    max-width:680px; margin:40px auto 0; background:var(--panel2);
+    border:1px solid var(--line); border-radius:12px; overflow:hidden; text-align:left;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+  }
+  .term .bar { display:flex; gap:7px; padding:11px 14px; border-bottom:1px solid var(--line); }
+  .term .bar i { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .term .bar .r{background:#ff5f56}.term .bar .y{background:#ffbd2e}.term .bar .g{background:#27c93f}
+  .term pre { margin:0; padding:16px 18px; font-size:13.5px; line-height:1.7; overflow-x:auto; }
+  .c-dim{color:var(--dim)} .c-acc{color:var(--accent)} .c-acc2{color:var(--accent2)}
+  .c-name{color:#e3b341} .c-ok{color:var(--accent)}
+
+  /* sections */
+  section { padding:52px 0; border-top:1px solid var(--line); }
+  section h2 { font-size:28px; margin:0 0 8px; }
+  section .lead { color:var(--dim); margin:0 0 28px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; }
+  .card h3 { margin:0 0 6px; font-size:17px; }
+  .card p { margin:0; color:var(--dim); font-size:14.5px; }
+  .card .emoji { font-size:22px; }
+
+  pre.block {
+    background:var(--panel2); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; overflow-x:auto; font-size:14px;
+  }
+  .step { color:var(--accent); font-weight:700; }
+  .note { color:var(--dim); font-size:14px; }
+
+  footer { border-top:1px solid var(--line); padding:32px 0; text-align:center; color:var(--dim); font-size:14px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <span class="brand">shhterm <span class="lock">🔒</span></span>
+    <span class="spacer"></span>
+    <a href="#features">Features</a>
+    <a href="#quickstart">Quick start</a>
+    <a href="guide.html">Docs</a>
+    <a href="https://github.com/AhmadFaraz-crypto/shhterm">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>shhterm <span class="lock">🔒</span></h1>
+    <p class="tag">End-to-end encrypted chat for your terminal — and the browser.
+      No accounts, no email, no passwords. A room key is the only credential.</p>
+    <div class="badges">
+      <span class="badge">C++20</span>
+      <span class="badge">AES-256-GCM E2E</span>
+      <span class="badge">Boost.Asio · OpenSSL · FTXUI</span>
+      <span class="badge">MIT licensed</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://shhterm.duckdns.org">Try the web client →</a>
+      <a class="btn ghost" href="guide.html">Read the docs</a>
+      <a class="btn ghost" href="https://github.com/AhmadFaraz-crypto/shhterm">View on GitHub</a>
+    </div>
+
+    <div class="term">
+      <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+      <img src="shhterm-demo.gif" alt="shhterm terminal demo: two people chatting end-to-end encrypted, with theme switching" style="display:block; width:100%; height:auto;" />
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Why shhterm</h2>
+    <p class="lead">Small, honest, and private by design.</p>
+    <div class="grid">
+      <div class="card"><div class="emoji">🔒</div><h3>End-to-end encrypted</h3><p>Messages are encrypted with AES-256-GCM. The server routes only ciphertext — it can't read your messages.</p></div>
+      <div class="card"><div class="emoji">🔑</div><h3>No accounts</h3><p>No signup, email, or passwords. A 256-bit room key is the only credential — share it and chat.</p></div>
+      <div class="card"><div class="emoji">💻</div><h3>Great terminal UI</h3><p>Colored names, timestamps, typing indicators, delivery marks, and switchable color themes.</p></div>
+      <div class="card"><div class="emoji">🌐</div><h3>Works in the browser</h3><p>A web client runs on any phone or desktop — including iPhone — sharing rooms and encryption with terminal users.</p></div>
+      <div class="card"><div class="emoji">🏢</div><h3>Self-hostable</h3><p>Run it on a cheap VPS, or a LAN-only server for same-network chat with no internet at all.</p></div>
+      <div class="card"><div class="emoji">🧪</div><h3>Tested & open source</h3><p>Unit tests, real-TLS end-to-end tests, and C++↔browser crypto interop checks. MIT licensed.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <p class="lead">Build from source on macOS or Linux.</p>
+
+    <p><span class="step">1.</span> Install dependencies</p>
+<pre class="block"><span class="c-dim"># macOS</span>
+brew install cmake ninja boost openssl@3
+
+<span class="c-dim"># Ubuntu / Debian</span>
+sudo apt-get install -y build-essential cmake ninja-build libboost-dev libssl-dev git</pre>
+
+    <p><span class="step">2.</span> Clone &amp; build</p>
+<pre class="block">git clone https://github.com/AhmadFaraz-crypto/shhterm && cd shhterm
+cmake -S . -B build -G Ninja
+cmake --build build</pre>
+
+    <p><span class="step">3.</span> Create a room (see the README for certificate setup)</p>
+<pre class="block">./build/shhterm create --name Ahmad
+<span class="c-dim"># share the room key; a friend runs:</span>
+./build/shhterm join &lt;room-key&gt; --name Ali</pre>
+
+    <p class="note">Full build, deployment (VPS + Let's Encrypt), Android/Termux, LAN mode,
+      and the web client are documented in the
+      <a href="https://github.com/AhmadFaraz-crypto/shhterm#readme">README</a>.</p>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap">
+    <h2>Security model</h2>
+    <p class="lead">Honest about what it protects — and what it doesn't.</p>
+    <div class="grid">
+      <div class="card"><h3>✅ Protected</h3><p>Message <b>bodies</b> are end-to-end encrypted (AES-256-GCM; key from the room-key's secret half, which never reaches the server). Transport is TLS; nothing is persisted or logged.</p></div>
+      <div class="card"><h3>⚠️ Not hidden</h3><p>Metadata the server must act on — usernames, room membership, message size/timing — is visible to the server. E2E protects contents, not metadata.</p></div>
+      <div class="card"><h3>🔑 The key is everything</h3><p>Anyone with the full room key can join and decrypt. Share it over a channel you trust. One key per room; no rotation.</p></div>
+      <div class="card"><h3>📖 Be reasonable</h3><p>This is a hobby/educational project without a formal audit. Great for private chats; don't use it for high-stakes confidentiality.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><a href="guide.html">Docs</a> ·
+       <a href="https://github.com/AhmadFaraz-crypto/shhterm">GitHub</a> ·
+       <a href="https://shhterm.duckdns.org">Web client</a> ·
+       <a href="https://github.com/AhmadFaraz-crypto/shhterm/blob/main/SECURITY.md">Security</a> ·
+       <a href="https://github.com/AhmadFaraz-crypto/shhterm/blob/main/PRIVACY.md">Privacy</a> ·
+       <a href="https://github.com/AhmadFaraz-crypto/shhterm/blob/main/LICENSE">MIT License</a></p>
+    <p>© 2026 Ahmad Faraz · TLS protects the transport and message bodies are end-to-end encrypted; not a formally audited product.</p>
+  </div>
+</footer>
+
+</body>
+</html>

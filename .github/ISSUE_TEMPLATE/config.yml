@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/AhmadFaraz-crypto/shhterm/security/advisories/new
+    about: Please report security issues privately, not as a public issue (see SECURITY.md).
+  - name: Documentation
+    url: https://ahmadfaraz-crypto.github.io/shhterm/guide.html
+    about: Check the docs — your question may already be answered.

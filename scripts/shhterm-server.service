@@ -1,0 +1,30 @@
+[Unit]
+Description=shhterm server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Run as an unprivileged user created for the service.
+User=shhterm
+Group=shhterm
+# Path to the installed binary and certificate files; adjust as needed.
+ExecStart=/opt/shhterm/bin/shhterm-server \
+  --address 0.0.0.0 \
+  --port 8443 \
+  --cert /etc/shhterm/fullchain.pem \
+  --key /etc/shhterm/privkey.pem \
+  --ttl-seconds 300
+Restart=on-failure
+RestartSec=2
+
+# Hardening: the server keeps everything in memory and needs no write access.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+# Allow reading the certs (owned by the shhterm group) but nothing else writable.
+ReadOnlyPaths=/etc/shhterm
+
+[Install]
+WantedBy=multi-user.target
