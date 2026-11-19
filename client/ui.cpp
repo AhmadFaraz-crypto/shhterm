@@ -425,21 +425,44 @@ void ChatUI::run() {
         lines.push_back(text(l.text) | color(th.dim));
         continue;
       }
-      // "HH:MM  name: text  <marker>"
-      Elements parts;
-      parts.push_back(text(l.stamp + " ") | color(th.dim));
-      parts.push_back(text(l.who + ": ") | color(name_color(l.who)) | bold);
-      Element body = text(l.text);
-      if (l.kind == LineKind::DM) body = body | color(th.dm);
-      else if (l.kind == LineKind::SelfMsg) body = body | color(th.self);
-      parts.push_back(body);
-      if (l.marker == Marker::Pending)
-        parts.push_back(text("  ·") | color(th.dim));
-      else if (l.marker == Marker::Delivered)
-        parts.push_back(text("  ✓") | color(th.accent));
-      else if (l.marker == Marker::Failed)
-        parts.push_back(text("  ✗ not delivered") | color(Color::Red));
-      lines.push_back(hbox(std::move(parts)));
+      // Split the body on newlines so multi-paragraph messages (e.g. from the
+      // web/mobile clients) render across multiple rows instead of garbled.
+      std::vector<std::string> body_lines;
+      {
+        std::string cur;
+        for (char ch : l.text) {
+          if (ch == '\n') { body_lines.push_back(cur); cur.clear(); }
+          else cur.push_back(ch);
+        }
+        body_lines.push_back(cur);
+      }
+      auto color_body = [&](Element e) {
+        if (l.kind == LineKind::DM) return e | color(th.dm);
+        if (l.kind == LineKind::SelfMsg) return e | color(th.self);
+        return e;
+      };
+      auto marker_el = [&]() -> Element {
+        if (l.marker == Marker::Pending) return text("  ·") | color(th.dim);
+        if (l.marker == Marker::Delivered) return text("  ✓") | color(th.accent);
+        if (l.marker == Marker::Failed) return text("  ✗ not delivered") | color(Color::Red);
+        return text("");
+      };
+      // Indent continuation rows to line up under the message text.
+      std::string indent(l.stamp.size() + 1 + l.who.size() + 2, ' ');
+      Elements rows;
+      for (std::size_t i = 0; i < body_lines.size(); ++i) {
+        Elements parts;
+        if (i == 0) {
+          parts.push_back(text(l.stamp + " ") | color(th.dim));
+          parts.push_back(text(l.who + ": ") | color(name_color(l.who)) | bold);
+        } else {
+          parts.push_back(text(indent));
+        }
+        parts.push_back(color_body(text(body_lines[i])));
+        if (i + 1 == body_lines.size()) parts.push_back(marker_el());
+        rows.push_back(hbox(std::move(parts)));
+      }
+      lines.push_back(rows.size() == 1 ? std::move(rows[0]) : vbox(std::move(rows)));
     }
     Element msg_area = vbox(std::move(lines)) |
                        focusPositionRelative(0, 1) | yframe | flex;
